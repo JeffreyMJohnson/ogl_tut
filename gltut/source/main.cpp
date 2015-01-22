@@ -1,4 +1,9 @@
-#include "GLFW\glfw3.h"
+
+
+#define GLEW_STATIC
+#include "GL/glew.h"
+
+#include "GLFW/glfw3.h"
 #include <thread>
 
 const int SCREEN_WIDTH = 1024;
@@ -15,6 +20,13 @@ void HandleUI();
 int main()
 {
 	Initialize();
+
+	//test GLEW
+	GLuint vertexBuffer;
+	glGenBuffers(1, &vertexBuffer);
+
+	printf("%u\n", vertexBuffer);
+
 	while (!glfwWindowShouldClose(window))
 	{
 		HandleUI();
@@ -36,6 +48,13 @@ void Initialize()
 	//make window active
 	glfwMakeContextCurrent(window);
 
+	//force GLEW to use a modern OpenGL method for checking if function is available
+	glewExperimental = GL_TRUE;
+	//initialize GLEW
+	glewInit();
+
+
+	
 }
 
 void Destroy()
