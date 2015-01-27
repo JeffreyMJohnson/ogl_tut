@@ -70,10 +70,6 @@
   <ItemGroup>
     <ClCompile Include="source\main.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\Entity.h" />
-    <ClInclude Include="include\Triangle.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

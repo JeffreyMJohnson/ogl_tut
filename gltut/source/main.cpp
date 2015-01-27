@@ -51,10 +51,10 @@ int main()
 
 	float vertices[] =
 	{
-		-.5, .5, 1, 0, 0, //top-left
-		.5, .5, 0, 1, 0, //top-right
-		.5, -.5, 0, 0, 1, //bottom-right
-		-.5, -.5, 1, 1, 1 //bottom-left
+		-.5, .5, .5, .5, .5, //top-left
+		.5, .5, .5, .5, .5, //top-right
+		.5, -.5, .5, .5, .5, //bottom-right
+		-.5, -.5, .5, .5, .5 //bottom-left
 	};
 
 
@@ -146,7 +146,7 @@ int main()
 		"void main()\n" \
 		"{\n" \
 		"Color = color;\n"\
-		"gl_Position = vec4(position, 0.0, 1.0);\n" \
+		"gl_Position = vec4(position.x, position.y * -1, 0.0, 1.0);\n" \
 		"}\n";
 
 	//fragment shader
@@ -165,6 +165,9 @@ int main()
 		"{\n"\
 		//"outColor = vec4(1.0,1.0,1.0,1.0);\n"
 		//"outColor = vec4(triangleColor,1);\n"
+		"Color.x = abs(Color.x - 1);\n"\
+		"Color.y = abs(Color.y - 1);\n"\
+		"Color.z = abs(Color.z - 1);\n"\
 		"outColor = vec4(Color, 1.0);\n"\
 		"}\n";
 
