@@ -38,12 +38,28 @@ int main()
 	//};
 
 	//vertices with coords x,y and color r,g,b
+	//float vertices[] =
+	//{
+	//	-.5, .5, 1, 0, 0, //top-left
+	//	.5, .5, 0, 1, 0, //top-right
+	//	.5, -.5, 0, 0, 1, //bottom-right
+
+	//	.5, -.5, 0, 0, 1, //bottom-right
+	//	-.5, -.5, 1, 1, 1, //bottom-left
+	//	-.5, .5, 1.0, 0 //top-left
+	//};
+
 	float vertices[] =
 	{
-		0, .5, 1, 0, 0,
-		.5, -.5, 0, 1, 0,
-		-.5, -.5, 0, 0, 1
+		-.5, .5, 1, 0, 0, //top-left
+		.5, .5, 0, 1, 0, //top-right
+		.5, -.5, 0, 0, 1, //bottom-right
+		-.5, -.5, 1, 1, 1 //bottom-left
 	};
+
+
+
+
 
 	/***************************************************************************************************************************************/
 	/*											vertex array objects																	   */
@@ -83,6 +99,34 @@ int main()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 
+	/***************************************************************************************************************************************/
+	/*											element buffers																			   */
+	/***************************************************************************************************************************************/
+	/*
+	way to control the order, which also enables you to reuse existing vertices.
+	*/
+	//refers to the order to draw the  vertices bound to GL_ARRAY_BUFFER
+	GLuint elements[] =
+	{
+		0, 1, 2,
+		2, 3, 0
+	};
+
+	//load into video memory through a VBO just like vertex data
+	GLuint ebo;
+	glGenBuffers(1, &ebo);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+
+	/*
+	creates and initializes a buffer object's data store
+	params
+	target - Specifies the target to which the buffer object is bound for glBufferData
+	size - Specifies the size in bytes of the buffer object's new data store.
+	data - Specifies a pointer to data that will be copied into the data store for initialization, or NULL if no data is to be copied.
+	usage - Specifies the expected usage pattern of the data store.
+	*/
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
 
 	/***************************************************************************************************************************************/
 	/*											shader creation, compile																   */
@@ -194,7 +238,7 @@ int main()
 	implies that can use a different VBO for each attribute.
 	*/
 	//stride is size of each vertex = 5 * floats per
-	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, sizeof(float)*5, 0);
+	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0);
 
 
 
@@ -205,7 +249,7 @@ int main()
 	GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
 	glEnableVertexAttribArray(colAttrib);
 	//offset per vertex is 2 * float to get to color data
-	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)(sizeof(float)*2));
+	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (void*)(sizeof(float) * 2));
 
 	//values of uniform are changed with any of glUniformXY functions, where X is number of components, and Y is the type (eg (f)loat, (d)ouble and (i)nteger
 	/*
@@ -229,11 +273,13 @@ int main()
 
 		/*
 		params
-		specifies kind of primitivsw
+		specifies kind of primitive
 		specifies how many vertices to skip at the beginning
 		specifies the number of vertices to process
 		*/
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		//glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		/*
 		clock()
