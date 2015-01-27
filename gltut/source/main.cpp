@@ -30,11 +30,19 @@ int main()
 	/***************************************************************************************************************************************/
 
 	//triangle vertices in device coords (-1 to 1)
+	//float vertices[] =
+	//{
+	//	0, .5,
+	//	.5, -.5,
+	//	-.5, -.5
+	//};
+
+	//vertices with coords x,y and color r,g,b
 	float vertices[] =
 	{
-		0, .5,
-		.5, -.5,
-		-.5, -.5
+		0, .5, 1, 0, 0,
+		.5, -.5, 0, 1, 0,
+		-.5, -.5, 0, 0, 1
 	};
 
 	/***************************************************************************************************************************************/
@@ -88,8 +96,12 @@ int main()
 	char* vertexShaderSource =
 		"#version 150\n" \
 		"in vec2 position;\n" \
+		//pass color to fragment shader
+		"in vec3 color;\n"\
+		"out vec3 Color;\n"\
 		"void main()\n" \
 		"{\n" \
+		"Color = color;\n"\
 		"gl_Position = vec4(position, 0.0, 1.0);\n" \
 		"}\n";
 
@@ -102,12 +114,14 @@ int main()
 	*/
 	char* fragmentShaderSource =
 		"#version 150\n"\
-		"uniform vec3 triangleColor;"\
+		"uniform vec3 triangleColor;\n"\
+		"in vec3 Color;\n"\
 		"out vec4 outColor;\n"\
 		"void main()\n"\
 		"{\n"\
 		//"outColor = vec4(1.0,1.0,1.0,1.0);\n"
-		"outColor = vec4(triangleColor,1);\n"\
+		//"outColor = vec4(triangleColor,1);\n"
+		"outColor = vec4(Color, 1.0);\n"\
 		"}\n";
 
 	//compile shaders
@@ -161,6 +175,9 @@ int main()
 	//get reference to position input in vertex shader
 	GLint positionAttribute = glGetAttribLocation(shaderProgram, "position");
 
+	//enable the vertex attribute array
+	glEnableVertexAttribArray(positionAttribute);
+
 	//with reference, specify how the data for that input is retrieved from the array
 	/*
 	params:
@@ -176,14 +193,19 @@ int main()
 	That means that you don't have to explicitly bind the correct VBO when the actual draw functions are called.  This also
 	implies that can use a different VBO for each attribute.
 	*/
-	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	//stride is size of each vertex = 5 * floats per
+	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, sizeof(float)*5, 0);
 
-	//enable the vertex attribute array
-	glEnableVertexAttribArray(positionAttribute);
+
 
 	//changing color programatically using uniform
 	//grab location of uniform
 	GLint uniColor = glGetUniformLocation(shaderProgram, "triangleColor");
+
+	GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
+	glEnableVertexAttribArray(colAttrib);
+	//offset per vertex is 2 * float to get to color data
+	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, (void*)(sizeof(float)*2));
 
 	//values of uniform are changed with any of glUniformXY functions, where X is number of components, and Y is the type (eg (f)loat, (d)ouble and (i)nteger
 	/*
@@ -194,7 +216,7 @@ int main()
 	value1 - green value (in this context)
 	value2 - blue value (in this context)
 	*/
-	//	glUniform3f(uniColor, 1, 0, 0);
+	//glUniform3f(uniColor, 1, 0, 0);
 
 
 
@@ -216,17 +238,17 @@ int main()
 		/*
 		clock()
 		Returns the processor time consumed by the program.
-		The value returned is expressed in clock ticks, which are units of time of a constant but system-specific length 
+		The value returned is expressed in clock ticks, which are units of time of a constant but system-specific length
 		(with a relation of CLOCKS_PER_SEC clock ticks per second).
 		time in seconds = ((float)clock())/CLOCKS_PER_SEC)
 		*/
-		float time = (float)clock() / (float)CLOCKS_PER_SEC;
+		//float time = (float)clock() / (float)CLOCKS_PER_SEC;
 
 
-		float rVal = (sin(time * 4) + 1) / 2;
+		//float rVal = (sin(time * 4) + 1) / 2;
 		//float s = sin(time * 4);
 		//float t = clock();
-		glUniform3f(uniColor, rVal, 0, 0);
+		//glUniform3f(uniColor, rVal, 0, 0);
 		//std::cout << s << std::endl;
 
 
