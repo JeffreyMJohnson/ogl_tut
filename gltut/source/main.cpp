@@ -61,7 +61,8 @@ const char* fragmentShaderSource =
 "if (TexCoord.y < .5)"
 "	outColor = texture(texKitten, TexCoord);"
 "else"
-"	outColor = texture(texKitten, vec2(TexCoord.x, 1.0 - TexCoord.y));"
+"	outColor = texture(texKitten, vec2(TexCoord.x + sin(TexCoord.y * 60 + time * 2.0) / 30, 1 - TexCoord.y)) * vec4(.7,.7,1,1);"
+//"	outColor = texture(texKitten, vec2(TexCoord.x, 1.0 - TexCoord.y));"
 //"outColor = mix(texture(texKitten, TexCoord), texture(texPuppy, TexCoord), time);"
 "}";
 
