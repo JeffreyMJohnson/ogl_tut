@@ -25,7 +25,7 @@ void Initialize();
 bool Quit();
 void Destroy();
 void Render();
-void HandleUI();
+void HandleUI(float* speed);
 void CheckShaderCompileStatus(GLuint& vertexShader);
 void DegreeToRadians(float* angle);
 
@@ -304,11 +304,12 @@ int main()
 	bool increase = true;
 	GLint u_time = glGetUniformLocation(shaderProgram, "time");
 
-
+	GLfloat angle = -45.0f;
+	GLfloat speed = 0.0f;
 
 	while (!glfwWindowShouldClose(window))
 	{
-		HandleUI();
+		HandleUI(&speed);
 		//clear screen to black
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -340,18 +341,23 @@ int main()
 		}
 
 		glUniform1f(u_time, deltaTime);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 		glm::mat4 model;
 		//angle is in radians
 		float time = glfwGetTime() * 100;
 		float rotation = 0.0f;
 		DegreeToRadians(&rotation);
 		DegreeToRadians(&time);
-		model = glm::rotate(model,
-			time,
-			glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::rotate(
+			model,
+			angle,
+			glm::vec3(1.0f, 0.0f, 0.0f));
+
+		angle += speed / (GLfloat)CLOCKS_PER_SEC;
+		speed /= 1.0f + 0.2f / (GLfloat)CLOCKS_PER_SEC;
 		
 		GLfloat s = sin(time *.5);
+		s = 1;
 		model = glm::scale(model, glm::vec3(s, s, s));
 		//model transform
 		GLint uniModel = glGetUniformLocation(shaderProgram, "model");
@@ -369,7 +375,7 @@ int main()
 		GLint uniProj = glGetUniformLocation(shaderProgram, "proj");
 		glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
 
-
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		//render all drawn graphics to screen
 		Render();
 	}
@@ -416,11 +422,15 @@ void Render()
 	glfwPollEvents();
 }
 
-void HandleUI()
+void HandleUI(float* speed)
 {
 	//close window if 'ESC' key pressed
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		*speed = 180.0f;
+	}
 }
 
 void CheckShaderCompileStatus(GLuint& shader)
