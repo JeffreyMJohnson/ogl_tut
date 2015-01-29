@@ -5,9 +5,16 @@
 
 #include "GLFW/glfw3.h"
 #include "SOIL/SOIL.h"
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
+
 #include <string>
 #include <iostream>
 #include <time.h>
+
+
+#define PI 3.14159265358979323846
 
 const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
@@ -20,6 +27,7 @@ void Destroy();
 void Render();
 void HandleUI();
 void CheckShaderCompileStatus(GLuint& vertexShader);
+void DegreeToRadians(float* angle);
 
 //vertex shader
 /*
@@ -34,11 +42,13 @@ const char* vertexShaderSource =
 "in vec2 texcoord;"
 "out vec3 Color;"
 "out vec2 TexCoord;"
+"uniform mat4 trans;"
 "void main()"
 "{"
 "Color = color;"
 "TexCoord = texcoord;"
-"gl_Position = vec4(position.x, position.y, 0.0, 1.0);"
+//"gl_Position = vec4(position.x, position.y, 0.0, 1.0);"
+"gl_Position = trans * vec4(position, 0,1);"
 "}";
 
 //fragment shader
@@ -58,17 +68,14 @@ const char* fragmentShaderSource =
 "uniform float time;"
 "void main()"
 "{"
-"if (TexCoord.y < .5)"
-"	outColor = texture(texKitten, TexCoord);"
-"else"
-"	outColor = texture(texKitten, vec2(TexCoord.x + sin(TexCoord.y * 60 + time * 2.0) / 30, 1 - TexCoord.y)) * vec4(.7,.7,1,1);"
-//"	outColor = texture(texKitten, vec2(TexCoord.x, 1.0 - TexCoord.y));"
-//"outColor = mix(texture(texKitten, TexCoord), texture(texPuppy, TexCoord), time);"
+"outColor = mix(texture(texKitten, TexCoord), texture(texPuppy, TexCoord), .5);"
 "}";
 
 
 int main()
 {
+
+	
 	//initialize GLEW and GLFW for window
 	Initialize();
 
@@ -295,6 +302,8 @@ int main()
 	bool increase = true;
 	GLint u_time = glGetUniformLocation(shaderProgram, "time");
 
+
+
 	while (!glfwWindowShouldClose(window))
 	{
 		HandleUI();
@@ -330,7 +339,17 @@ int main()
 
 		glUniform1f(u_time, deltaTime);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glm::mat4 trans;
+		//angle is in radians
+		float time = glfwGetTime() * 100;
+		DegreeToRadians(&time);
+		trans = glm::rotate(trans,
+			time,
+			glm::vec3(0.0f, 0.0f, -1.0f));
+		glm::vec4 result = trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
+		GLint uniTrans = glGetUniformLocation(shaderProgram, "trans");
+		glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
 
 		//render all drawn graphics to screen
 		Render();
@@ -397,4 +416,9 @@ void CheckShaderCompileStatus(GLuint& shader)
 	}
 	else
 		printf("Shader compiled with no errors.\n");
+}
+
+void DegreeToRadians(float* angle)
+{
+	*angle = *angle * (PI / 180);
 }
