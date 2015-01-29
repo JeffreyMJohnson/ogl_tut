@@ -42,13 +42,15 @@ const char* vertexShaderSource =
 "in vec2 texcoord;"
 "out vec3 Color;"
 "out vec2 TexCoord;"
-"uniform mat4 trans;"
+"uniform mat4 model;"
+"uniform mat4 view;"
+"uniform mat4 proj;"
 "void main()"
 "{"
 "Color = color;"
 "TexCoord = texcoord;"
 //"gl_Position = vec4(position.x, position.y, 0.0, 1.0);"
-"gl_Position = trans * vec4(position, 0,1);"
+"gl_Position = proj * view * model * vec4(position, 0, 1);"
 "}";
 
 //fragment shader
@@ -75,7 +77,7 @@ const char* fragmentShaderSource =
 int main()
 {
 
-	
+
 	//initialize GLEW and GLFW for window
 	Initialize();
 
@@ -339,17 +341,33 @@ int main()
 
 		glUniform1f(u_time, deltaTime);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glm::mat4 trans;
+		glm::mat4 model;
 		//angle is in radians
 		float time = glfwGetTime() * 100;
+		float rotation = 0.0f;
+		DegreeToRadians(&rotation);
 		DegreeToRadians(&time);
-		trans = glm::rotate(trans,
+		model = glm::rotate(model,
 			time,
-			glm::vec3(0.0f, 0.0f, -1.0f));
-		glm::vec4 result = trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+			glm::vec3(0.0f, 0.0f, 1.0f));
+		//glm::vec4 result = model * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
-		GLint uniTrans = glGetUniformLocation(shaderProgram, "trans");
-		glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+		//model transform
+		GLint uniModel = glGetUniformLocation(shaderProgram, "model");
+		glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+
+		//view transform
+		glm::mat4 view = glm::lookAt(
+			glm::vec3(1.2, 1.2, 1.2),
+			glm::vec3(0, 0, 0),
+			glm::vec3(0, 0, 1));
+		GLint uniView = glGetUniformLocation(shaderProgram, "view");
+		glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
+
+		glm::mat4 proj = glm::perspective(45.0f, 800.0f / 600.0f, 1.0f, 10.0f);
+		GLint uniProj = glGetUniformLocation(shaderProgram, "proj");
+		glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
+
 
 		//render all drawn graphics to screen
 		Render();
