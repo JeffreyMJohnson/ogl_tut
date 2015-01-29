@@ -350,8 +350,9 @@ int main()
 		model = glm::rotate(model,
 			time,
 			glm::vec3(0.0f, 0.0f, 1.0f));
-		//glm::vec4 result = model * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-
+		
+		GLfloat s = sin(time *.5);
+		model = glm::scale(model, glm::vec3(s, s, s));
 		//model transform
 		GLint uniModel = glGetUniformLocation(shaderProgram, "model");
 		glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
