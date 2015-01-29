@@ -58,7 +58,11 @@ const char* fragmentShaderSource =
 "uniform float time;"
 "void main()"
 "{"
-"outColor = mix(texture(texKitten, TexCoord), texture(texPuppy, TexCoord), time);"
+"if (TexCoord.y < .5)"
+"	outColor = texture(texKitten, TexCoord);"
+"else"
+"	outColor = texture(texKitten, vec2(TexCoord.x, 1.0 - TexCoord.y));"
+//"outColor = mix(texture(texKitten, TexCoord), texture(texPuppy, TexCoord), time);"
 "}";
 
 
