@@ -4,6 +4,7 @@
 #include "GL/glew.h"
 
 #include "GLFW/glfw3.h"
+#include "SOIL/SOIL.h"
 #include <string>
 #include <iostream>
 #include <time.h>
@@ -20,45 +21,51 @@ void Render();
 void HandleUI();
 void CheckShaderCompileStatus(GLuint& vertexShader);
 
+//vertex shader
+/*
+vertex shadder is program on graphics card that processes each vertex and it's attributes as they appear in the vertex array.
+It's duty is to output the final vertex position in device coords and to output any data the fragment shader requires.
+The 3D transform should take place here.
+*/
+const char* vertexShaderSource =
+"#version 150 core\n"
+"in vec2 position;"
+"in vec3 color;"
+"in vec2 texcoord;"
+"out vec3 Color;"
+"out vec2 TexCoord;"
+"void main()"
+"{"
+"Color = color;"
+"TexCoord = texcoord;"
+"gl_Position = vec4(position.x, position.y, 0.0, 1.0);"
+"}";
+
+//fragment shader
+/*
+The output of the vertex shader is iterpolated over all the pixels on the screen covered by a primitive.  These pixels are called fragments
+and this is what the fragment shader operates on.  Just likle vertex shader, the fragment shader has one mandatory output, the final color
+of a fragment.
+NOTE: colors in OpenGL are usually represented as float from 0 - 1 instead of common 0 - 255.
+*/
+const char* fragmentShaderSource =
+"#version 150 core\n"
+"in vec3 Color;"
+"in vec2 TexCoord;"
+"out vec4 outColor;"
+"uniform sampler2D texKitten;"
+"uniform sampler2D texPuppy;"
+"uniform float time;"
+"void main()"
+"{"
+"outColor = mix(texture(texKitten, TexCoord), texture(texPuppy, TexCoord), time);"
+"}";
+
 
 int main()
 {
+	//initialize GLEW and GLFW for window
 	Initialize();
-
-	/***************************************************************************************************************************************/
-	/*											model to draw																			   */
-	/***************************************************************************************************************************************/
-
-	//triangle vertices in device coords (-1 to 1)
-	//float vertices[] =
-	//{
-	//	0, .5,
-	//	.5, -.5,
-	//	-.5, -.5
-	//};
-
-	//vertices with coords x,y and color r,g,b
-	//float vertices[] =
-	//{
-	//	-.5, .5, 1, 0, 0, //top-left
-	//	.5, .5, 0, 1, 0, //top-right
-	//	.5, -.5, 0, 0, 1, //bottom-right
-
-	//	.5, -.5, 0, 0, 1, //bottom-right
-	//	-.5, -.5, 1, 1, 1, //bottom-left
-	//	-.5, .5, 1.0, 0 //top-left
-	//};
-
-	float vertices[] =
-	{
-		-.5, .5, .5, .5, .5, //top-left
-		.5, .5, .5, .5, .5, //top-right
-		.5, -.5, .5, .5, .5, //bottom-right
-		-.5, -.5, .5, .5, .5 //bottom-left
-	};
-
-
-
 
 
 	/***************************************************************************************************************************************/
@@ -66,17 +73,15 @@ int main()
 	/***************************************************************************************************************************************/
 	/*
 	A Vertex array object  stores all of the links between attributes and VBO's raw vertex data.
-	*/
-	//bind it
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
 
-	/*
 	as soon as VAO is bound, every time you call glVertexAttribPointer, that information is stored in that VAO. This makes switching between
 	different vertex data and vertex formats as easy as binding a differentg vao.  Note, a VAO doesn't store any vertex data itself, it just
 	references the VBO's created and how to retrieve attribute values from them.  Since only calls after binding a vao stick to it, make
 	sure you create and bind vao at start of program.
 	*/
+	//create vertex array object
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
 	/***************************************************************************************************************************************/
@@ -87,15 +92,26 @@ int main()
 	GLuint vbo;//handle to buffer object, need to make active and destroy when done
 	glGenBuffers(1, &vbo);//get the handle from OpenGL
 
+
+
+	//vertex data including position (2), color (3), and texture Coordinates (2)
+	float vertices[] =
+	{
+		-.5, .5, 1, 0, 0, 0, 0, //top-left
+		.5, .5, 0, 1, 0, 1, 0,//top-right
+		.5, -.5, 0, 0, 1, 1, 1,//bottom-right
+		-.5, -.5, 1, 1, 1, 0, 1//bottom-left
+	};
+
 	//make it active array buffer
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
 	//now can copy the data to active array buffer on GPU
 	/*note last param enum:
-		GL_STATIC_DRAW - vertex data will be uploaded once and drawn many times (e.g. the world)
-		GL_DYNAMIC_DRAW - vertex data will be changed from time to time, but drawn many times more than that.
-		GL_STREAM_DRAW - vertex data will change almost every time it's drawn (e.g. user interface)
-		*/
+	GL_STATIC_DRAW - vertex data will be uploaded once and drawn many times (e.g. the world)
+	GL_DYNAMIC_DRAW - vertex data will be changed from time to time, but drawn many times more than that.
+	GL_STREAM_DRAW - vertex data will change almost every time it's drawn (e.g. user interface)
+	*/
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 
@@ -105,6 +121,11 @@ int main()
 	/*
 	way to control the order, which also enables you to reuse existing vertices.
 	*/
+
+	//create element array
+	GLuint ebo;
+	glGenBuffers(1, &ebo);
+
 	//refers to the order to draw the  vertices bound to GL_ARRAY_BUFFER
 	GLuint elements[] =
 	{
@@ -112,9 +133,6 @@ int main()
 		2, 3, 0
 	};
 
-	//load into video memory through a VBO just like vertex data
-	GLuint ebo;
-	glGenBuffers(1, &ebo);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
@@ -128,54 +146,16 @@ int main()
 	*/
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
 
+
+
 	/***************************************************************************************************************************************/
 	/*											shader creation, compile																   */
 	/***************************************************************************************************************************************/
-	//vertex shader
-	/*
-	vertex shadder is program on graphics card that processes each vertex and it's attributes as they appear in the vertex array.
-	It's duty is to output the final vertex position in device coords and to output any data the fragment shader requires.
-	The 3D transform should take place here.
-	*/
-	char* vertexShaderSource =
-		"#version 150\n" \
-		"in vec2 position;\n" \
-		//pass color to fragment shader
-		"in vec3 color;\n"\
-		"out vec3 Color;\n"\
-		"void main()\n" \
-		"{\n" \
-		"Color = color;\n"\
-		"gl_Position = vec4(position.x, position.y * -1, 0.0, 1.0);\n" \
-		"}\n";
-
-	//fragment shader
-	/*
-	The output of the vertex shader is iterpolated over all the pixels on the screen covered by a primitive.  These pixels are called fragments
-	and this is what the fragment shader operates on.  Just likle vertex shader, the fragment shader has one mandatory output, the final color
-	of a fragment.
-	NOTE: colors in OpenGL are usually represented as float from 0 - 1 instead of common 0 - 255.
-	*/
-	char* fragmentShaderSource =
-		"#version 150\n"\
-		"uniform vec3 triangleColor;\n"\
-		"in vec3 Color;\n"\
-		"out vec4 outColor;\n"\
-		"void main()\n"\
-		"{\n"\
-		//"outColor = vec4(1.0,1.0,1.0,1.0);\n"
-		//"outColor = vec4(triangleColor,1);\n"
-		"Color.x = abs(Color.x - 1);\n"\
-		"Color.y = abs(Color.y - 1);\n"\
-		"Color.z = abs(Color.z - 1);\n"\
-		"outColor = vec4(Color, 1.0);\n"\
-		"}\n";
 
 	//compile shaders
 	//create shader object and load data into it
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-
 	////now compile it
 	glCompileShader(vertexShader);
 
@@ -241,18 +221,13 @@ int main()
 	implies that can use a different VBO for each attribute.
 	*/
 	//stride is size of each vertex = 5 * floats per
-	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0);
+	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 7, 0);
 
-
-
-	//changing color programatically using uniform
-	//grab location of uniform
-	GLint uniColor = glGetUniformLocation(shaderProgram, "triangleColor");
 
 	GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
 	glEnableVertexAttribArray(colAttrib);
 	//offset per vertex is 2 * float to get to color data
-	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (void*)(sizeof(float) * 2));
+	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 7, (void*)(sizeof(float) * 2));
 
 	//values of uniform are changed with any of glUniformXY functions, where X is number of components, and Y is the type (eg (f)loat, (d)ouble and (i)nteger
 	/*
@@ -265,15 +240,62 @@ int main()
 	*/
 	//glUniform3f(uniColor, 1, 0, 0);
 
+	//texture data
+	GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
+	glEnableVertexAttribArray(texAttrib);
+	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 7, (void*)(sizeof(float) * 5));
 
 
+	/***************************************************************************************************************************************/
+	/*											Texture objects and paramaters															   */
+	/***************************************************************************************************************************************/
+	GLuint textures[2];
+	glGenTextures(2, textures);
 
+	//load texture
+	//GLuint tex;
+	//glGenTextures(1, &tex);
 
+	//need to load the image into memory before configuring texture params, using SOIL for loading image
+	int width, height;
+	unsigned char* image;//= SOIL_load_image(".\\images\\sample.png", &width, &height, 0, SOIL_LOAD_RGB);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
+	image = SOIL_load_image(".\\images\\sample.png", &width, &height, 0, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	SOIL_free_image_data(image);
+	glUniform1i(glGetUniformLocation(shaderProgram, "texKitten"), 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, textures[1]);
+	image = SOIL_load_image(".\\images\\sample2.png", &width, &height, 0, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	SOIL_free_image_data(image);
+
+	glUniform1i(glGetUniformLocation(shaderProgram, "texPuppy"), 1);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	double deltaTime = 0.0;
+	double step = .001;
+	bool increase = true;
+	GLint u_time = glGetUniformLocation(shaderProgram, "time");
 
 	while (!glfwWindowShouldClose(window))
 	{
 		HandleUI();
-
+		//clear screen to black
+		glClearColor(0, 0, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT);
 		/*
 		params
 		specifies kind of primitive
@@ -282,28 +304,43 @@ int main()
 		*/
 		//glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		if (increase)
+		{
+			deltaTime += step;
+		}
+		else
+		{
+			deltaTime -= step;
+		}
+
+
+		if (deltaTime > 1.0)
+		{
+			increase = false;
+		}
+		if (deltaTime < 0)
+		{
+			increase = true;
+		}
+
+		glUniform1f(u_time, deltaTime);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-		/*
-		clock()
-		Returns the processor time consumed by the program.
-		The value returned is expressed in clock ticks, which are units of time of a constant but system-specific length
-		(with a relation of CLOCKS_PER_SEC clock ticks per second).
-		time in seconds = ((float)clock())/CLOCKS_PER_SEC)
-		*/
-		//float time = (float)clock() / (float)CLOCKS_PER_SEC;
-
-
-		//float rVal = (sin(time * 4) + 1) / 2;
-		//float s = sin(time * 4);
-		//float t = clock();
-		//glUniform3f(uniColor, rVal, 0, 0);
-		//std::cout << s << std::endl;
 
 
 		//render all drawn graphics to screen
 		Render();
 	}
+	glDeleteTextures(2, textures);
+
+	glDeleteProgram(shaderProgram);
+	glDeleteShader(fragmentShader);
+	glDeleteShader(vertexShader);
+
+	glDeleteBuffers(1, &ebo);
+	glDeleteBuffers(1, &vbo);
+
+	glDeleteVertexArrays(1, &vao);
+
 	Destroy();
 }
 
